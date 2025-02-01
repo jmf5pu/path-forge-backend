@@ -1,13 +1,26 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
-from models import Graph
-from database import check_user_credentials, save_graph
+from src.models import Graph
+from src.database import check_user_credentials, save_graph
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 @app.get("/login")
 async def login(email: str, password: str):
     if check_user_credentials(email, password):
+        print("worked")
         return {"status": "success", "message": "Login successful"}
     else:
         raise HTTPException(status_code=401, detail="Invalid email or password")
