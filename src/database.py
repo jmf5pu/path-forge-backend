@@ -1,6 +1,6 @@
 from typing import List, Dict
 import motor.motor_asyncio
-from src.models import Graph, User, Node, Edge
+from src.models import Graph, User, Node, Edge, UserAuth
 import os
 from bson import ObjectId
 from dotenv import load_dotenv
@@ -39,6 +39,19 @@ async def save_graph(graph_name: str, nodes: List[Node], edges: List[Edge]):
     )
 
     return result
+
+
+async def get_user(auth: UserAuth):
+    user = await users_collection.find_one({"auth": auth.model_dump()})
+    print("user: ", user)
+
+    if not user:
+        raise Exception("User not found")
+
+    user.pop("auth", None)
+
+    return user
+
 
 async def create_user(user: User):
     await users_collection.insert_one(user.model_dump_json())

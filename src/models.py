@@ -67,8 +67,13 @@ class Name(BaseModel):
     first: str
     last: str
 
-class User(BaseModel):
+class UserAuth(BaseModel):
     email: str
     password: str
+
+class User(BaseModel):
+    auth: UserAuth
     name: Name
     start_date: date
+    graph_id: Optional[str]
+    compensation: float

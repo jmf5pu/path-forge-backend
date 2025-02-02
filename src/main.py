@@ -1,12 +1,13 @@
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.responses import JSONResponse
-from src.models import Graph, User, Node
+from src.models import Graph, User, Node, UserAuth
 from src.database import (
-    check_user_credentials, save_graph, create_user, delete_user,
+    check_user_credentials, save_graph, get_user, create_user, delete_user,
     create_node, get_all_nodes, delete_node
 )
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+from typing import Optional
 
 load_dotenv()
 
@@ -32,13 +33,21 @@ async def login(email: str, password: str):
 @app.post("/save-graph")
 async def save_graph_endpoint(graph: Graph):
     try:
-        # You might need to save the graph to your database, e.g.:
         await save_graph(graph.graphName, graph.nodes, graph.edges)
         return JSONResponse(content={"status": "success", "message": "Graph saved successfully"}, status_code=200)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error saving graph: {str(e)}")
 
-
+@app.post("/users", response_model=Optional[dict])
+async def get_profile_endpoint(auth: UserAuth):
+    try:
+        print(auth)
+        user = await get_user(auth)
+        print("user out: ", user)
+        return JSONResponse(content=user, status_code=200)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail="User not found")
+    
 @app.post("/users")
 async def create_user_endpoint(user: User):
     await create_user(user)
