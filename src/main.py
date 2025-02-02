@@ -29,13 +29,15 @@ async def login(email: str, password: str):
     else:
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
-@app.post("/saveGraph")
+@app.post("/save-graph")
 async def save_graph_endpoint(graph: Graph):
     try:
-        await save_graph(graph.graphName, graph.nodes)
+        # You might need to save the graph to your database, e.g.:
+        await save_graph(graph.graphName, graph.nodes, graph.edges)
         return JSONResponse(content={"status": "success", "message": "Graph saved successfully"}, status_code=200)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error saving graph: {str(e)}")
+
 
 @app.post("/users")
 async def create_user_endpoint(user: User):

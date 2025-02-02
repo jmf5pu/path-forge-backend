@@ -1,9 +1,10 @@
 from typing import List, Dict
 import motor.motor_asyncio
-from src.models import Graph, User, Node
+from src.models import Graph, User, Node, Edge
 import os
 from bson import ObjectId
 from dotenv import load_dotenv
+from pymongo import ReturnDocument
 
 load_dotenv()
 
@@ -22,12 +23,22 @@ async def check_user_credentials(email: str, password: str) -> bool:
         return user["password"] == password
     return False
 
-async def save_graph(graph_name: str, nodes: List[Dict]) -> bool:
-    graph_data = {"graphName": graph_name, "nodes": nodes}
-    result = await graphs_collection.replace_one(
-        {"graphName": graph_name}, graph_data, upsert=True
+async def save_graph(graph_name: str, nodes: List[Node], edges: List[Edge]):
+    graph_data = {
+        "graphName": graph_name,
+        "nodes": [node.model_dump() for node in nodes],  # Convert to dictionaries
+        "edges": [edge.model_dump() for edge in edges],  # Convert to dictionaries
+    }
+
+    # Insert or update the graph in MongoDB
+    result = await graphs_collection.find_one_and_update(
+        {"graphName": graph_name},
+        {"$set": graph_data},
+        upsert=True,  # If the graph doesn't exist, create it
+        return_document=ReturnDocument.AFTER,
     )
-    return result.modified_count > 0 or result.upserted_id is not None
+
+    return result
 
 async def create_user(user: User):
     await users_collection.insert_one(user.model_dump_json())
@@ -46,7 +57,7 @@ async def get_all_nodes():
     for node in nodes:
         node["id"] = str(node["_id"])
         del node["_id"]
-        
+
     return nodes
 
 async def delete_node(node_id: str):
