@@ -41,9 +41,7 @@ async def save_graph_endpoint(graph: Graph):
 @app.post("/users", response_model=Optional[dict])
 async def get_profile_endpoint(auth: UserAuth):
     try:
-        print(auth)
         user = await get_user(auth)
-        print("user out: ", user)
         return JSONResponse(content=user, status_code=200)
     except Exception as e:
         raise HTTPException(status_code=404, detail="User not found")

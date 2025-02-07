@@ -5,6 +5,7 @@ import os
 from bson import ObjectId
 from dotenv import load_dotenv
 from pymongo import ReturnDocument
+from datetime import datetime
 
 load_dotenv()
 
@@ -18,9 +19,9 @@ graphs_collection = db["graphs"]
 nodes_collection = db["nodes"]
 
 async def check_user_credentials(email: str, password: str) -> bool:
-    user = await users_collection.find_one({"email": email})
+    user = await users_collection.find_one({"auth.email": email})
     if user:
-        return user["password"] == password
+        return user["auth"]["password"] == password
     return False
 
 async def save_graph(graph_name: str, nodes: List[Node], edges: List[Edge]):
@@ -41,16 +42,25 @@ async def save_graph(graph_name: str, nodes: List[Node], edges: List[Edge]):
     return result
 
 
+def serialize_user(user):
+    """Convert ObjectId and datetime to strings for JSON compatibility."""
+    if not user:
+        return None
+    user["_id"] = str(user["_id"]) if "_id" in user else None
+    user["graph_id"] = str(user["graph_id"]) if "graph_id" in user else None
+    if "start_date" in user and isinstance(user["start_date"], datetime):
+        user["start_date"] = user["start_date"].isoformat()
+    return user
+
 async def get_user(auth: UserAuth):
     user = await users_collection.find_one({"auth": auth.model_dump()})
-    print("user: ", user)
 
     if not user:
         raise Exception("User not found")
 
     user.pop("auth", None)
 
-    return user
+    return serialize_user(user)
 
 
 async def create_user(user: User):
