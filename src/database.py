@@ -41,6 +41,12 @@ async def save_graph(graph_name: str, nodes: List[Node], edges: List[Edge]):
 
     return result
 
+async def get_graph(graph_id: str) -> Graph:
+    graph = Graph(**(await graphs_collection.find_one({"_id": ObjectId(graph_id)})))
+    if not graph:
+        raise Exception("Graph not found")
+
+    return graph
 
 def serialize_user(user):
     """Convert ObjectId and datetime to strings for JSON compatibility."""
@@ -50,7 +56,7 @@ def serialize_user(user):
     user["graph_id"] = str(user["graph_id"]) if "graph_id" in user else None
     if "start_date" in user and isinstance(user["start_date"], datetime):
         user["start_date"] = user["start_date"].isoformat()
-    return user
+    return user    
 
 async def get_user(auth: UserAuth):
     user = await users_collection.find_one({"auth": auth.model_dump()})

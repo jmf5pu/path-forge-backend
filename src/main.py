@@ -3,13 +3,17 @@ from fastapi.responses import JSONResponse
 from src.models import Graph, User, Node, UserAuth
 from src.database import (
     check_user_credentials, save_graph, get_user, create_user, delete_user,
-    create_node, get_all_nodes, delete_node
+    create_node, get_all_nodes, delete_node, get_graph
 )
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from typing import Optional
+import logging
+import sys
 
 load_dotenv()
+
+logger = logging.getLogger('uvicorn.error')
 
 app = FastAPI()
 
@@ -30,7 +34,7 @@ async def login(email: str, password: str):
     else:
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
-@app.post("/save-graph")
+@app.post("/graphs")
 async def save_graph_endpoint(graph: Graph):
     try:
         await save_graph(graph.graphName, graph.nodes, graph.edges)
@@ -38,12 +42,23 @@ async def save_graph_endpoint(graph: Graph):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error saving graph: {str(e)}")
 
+@app.get("/graphs/{graph_id}")
+async def get_graph_endpoint(graph_id: str):
+    try:
+        graph: Graph = await get_graph(graph_id)
+        return JSONResponse(content={"status": "success", "message": "Graph retrieved successfully", "graph": graph.model_dump()},
+                            status_code=200)
+    except Exception as e:
+        logger.error(e)
+        raise HTTPException(status_code=404, detail="Graph not found")
+
 @app.post("/users", response_model=Optional[dict])
 async def get_profile_endpoint(auth: UserAuth):
     try:
         user = await get_user(auth)
         return JSONResponse(content=user, status_code=200)
     except Exception as e:
+        logger.error(e)
         raise HTTPException(status_code=404, detail="User not found")
     
 @app.post("/users")
